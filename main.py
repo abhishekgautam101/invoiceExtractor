@@ -14,6 +14,7 @@ from .input import tesseract4
 from .input import gvision
 
 from invoice2data.extract.loader import read_templates
+from .extract.invoice_fields import analize_heading, analize_fields, clear_invoice_lines, InvoiceFields
 
 from .output import to_csv
 from .output import to_json
@@ -93,6 +94,52 @@ def extract_data(invoicefile, templates=None, input_module=pdftotext):
     logger.error("No template for %s", invoicefile)
     return False
 
+def analize_data(extractedData):
+    """Analize lines from optimized string extracted from PDF/image invoices.
+    Data in the invoice is structured according to predefined model.
+    The model is based on the most commonly occuring in the business transactions
+    invoices.
+
+    This function always must run as post-extraction. It uses only lines extracted from
+    invoices.
+
+    Each invoice line consists of fields (at least 5). For Polish standards:
+    * Product description
+    * Quantity of products
+    * Possible discount
+    * Tax rate e.g. 23%, 8%, 4%
+    * PKWiU
+    * Net & Gross value
+
+    During analysis, algorithm is looking for field dependencies eg.
+    Net value of products = Gross value / (1 + VAT)
+    Unit price = Net value / qty
+    or checking original sequence of fields in the invoice.
+
+    Parameters
+    ----------
+    extractedData - dict with extracted fields based on (regexp) invoice model,
+                    return by extract_data function.
+
+    Returns
+    -------
+    dict - extracted and matched fields from invoice lines
+
+    """
+    logger.debug("Invoice analysis started ===========================")
+    # inv_fields = InvoiceFields(extractedData)
+    # inv_fields.analize_data()
+    heading, cleared_lines = clear_invoice_lines(extractedData['lines'][0]['pos'].split('\n'))
+    logger.debug("Done line clearing")
+    extractedData['lines'] = []
+
+    fields_order = analize_heading(heading, cleared_lines[0])
+    logger.debug("Taken fields order")
+    for line in cleared_lines:
+        extractedData['lines'].append(analize_fields(fields_order, line))
+    logger.debug("Fields analized")
+
+    return extractedData
 
 def create_parser():
     """Returns argument parser """
