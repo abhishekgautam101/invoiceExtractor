@@ -31,7 +31,7 @@ def extract(self, content, output):
     if not start or not end:
         logger.warning("no lines found - start %s, end %s", start, end)
         return
-    content = content[start.end() : end.start()]
+    content = content[start.start() : end.start()]
     
     lines = []
     current_row = {}
