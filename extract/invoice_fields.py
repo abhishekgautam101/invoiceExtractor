@@ -158,7 +158,7 @@ def separate_fields(line):
 
 
 def get_indexed_data(fields_order, line):
-    qty = validate_float_value(line[fields_order['qty']])
+    qty = str(validate_float_value(line[fields_order['qty']]))
     discount, PKWiU = '', ''
     elems = [line[fields_order['qty']]]
 
@@ -167,15 +167,15 @@ def get_indexed_data(fields_order, line):
         elems.append(line[fields_order['PKWiU']])
     if 'discount' in fields_order.keys():
         nums = re.search('\s*([0-9]{1,}[.,]*\d{0,2})\s*%*\s*', line[fields_order['discount']]).group(1)
-        discount = validate_float_value(nums)/100
+        discount = str(validate_float_value(nums)/100)
         elems.append(line[fields_order['discount']])
     for elem in elems:
         line.remove(elem)
     return qty, discount, PKWiU
 
 def get_no_description(line):
-    reg1 = '^([0-9]{1,})[.,]{0,1}\s*([A-Za-z1-9ąćęńółźżśĄĆĘŁŃŚŹŻ\-\n\s]*)'
-    reg2 = '^([A-Za-z0-9ąćęńółźżśĄĆĘŁŃŚŹŻ\-\n\s]{1,})' 
+    reg1 = '^([0-9]{1,})[.,]{0,1}\s*([A-Za-z0-9ąćęńółźżśĄĆĘŁŃŚŹŻ,.\-\n\s]*)'
+    reg2 = '^([A-Za-z0-9ąćęńółźżśĄĆĘŁŃŚŹŻ,.\-\n\s]{1,})' 
     line_no = ''
 
     if re.search(reg1, line[0]):
@@ -207,14 +207,14 @@ def get_percentage_rate(line, check_tax=False):
             tax = float(re.search(tax_regexp, field).group(1))
             if check_tax and tax in [23, 8, 7, 4, 0]:
                     line.remove(re.search(tax_regexp, field).group(0))
-                    return tax/100
+                    return str(tax/100)
             else:
                 line.remove(re.search(tax_regexp, field).group(0))
-                return tax/100
+                return str(tax/100)
 
 
 def validate_float_value(field):
-    return float(re.sub('[A-Za-zł\s+]', '', field).replace(',', '.'))
+    return float(re.sub('[A-Za-zł%\s+]', '', field).replace(',', '.'))
 
 
 def get_gross_value(line):
@@ -225,28 +225,28 @@ def get_gross_value(line):
         if gross_value == validate_float_value(field):
             field_to_remove = field
     line.remove(field_to_remove)
-    return gross_value
+    return str(gross_value)
 
 def get_unit_price(line, net_value, qty):
     unit_price, trash = '', ''
-    unit_price = round(net_value/qty, 2)
-    return unit_price
+    unit_price = round(float(net_value)/float(qty), 2)
+    return str(unit_price)
     
 
 def get_net_value(line, fields):
-    gross_value = fields['gross_value']
-    net_value = round(gross_value / (1 + fields['tax_rate']), 2)
+    gross_value = float(fields['gross_value'])
+    net_value = round(gross_value / (1 + float(fields['tax_rate'])), 2)
     for field in line:
         if net_value == validate_float_value(field):
             line.remove(field)
-    return net_value
+    return str(net_value)
 
 
 def remove_total_tax(line, fields):
     if fields['discount']:
-        total_tax = round(fields['tax_rate'] * ((1 - fields['discount']) * fields['net_value']), 2) 
+        total_tax = round(float(fields['tax_rate']) * ((1 - float(fields['discount'])) * float(fields['net_value'])), 2) 
     else:
-        total_tax = round(fields['tax_rate'] * fields['net_value'], 2)
+        total_tax = round(float(fields['tax_rate']) * float(fields['net_value']), 2)
     for field in line:
         if total_tax == validate_float_value(field):
             line.remove(field)
